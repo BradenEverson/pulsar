@@ -1,0 +1,1 @@
+#define SIMULATION_SECONDS 1
