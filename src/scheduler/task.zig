@@ -1,5 +1,7 @@
 //! Task definition
 
+const QAgent = @import("q_agent.zig");
+
 /// Number of tasks we support at a time
 pub const MAX_TASKS: usize = 10;
 var tasks: usize = 0;
@@ -9,9 +11,10 @@ pub const MAX_STACK_SIZE: usize = 100;
 
 export var stacks: [MAX_TASKS][MAX_STACK_SIZE]u32 align(8) = undefined;
 
-pub const Task = packed struct {
+pub const Task = extern struct {
     sp: *u32,
     id: u8,
+    agent: QAgent = .{},
 
     pub fn init(task: *const fn () noreturn, id: u8) Task {
         const stack = &stacks[tasks];
