@@ -32,6 +32,8 @@ pub fn build(b: *std.Build) void {
         .sanitize_c = if (optimization == .ReleaseSafe) std.zig.SanitizeC.full else null,
     });
 
+    exe_mod.addAssemblyFile(b.path("src/scheduler/scheduler.S"));
+
     const elf = b.addExecutable(.{
         .name = exe_name ++ ".elf",
         .linkage = .static,

@@ -3,6 +3,8 @@
 const task = @import("task.zig");
 const Task = task.Task;
 
+extern fn SchedulerStart() void;
+
 const c = @cImport({
     @cDefine("USE_HAL_DRIVER", {});
     @cDefine("STM32F446xx", {});
@@ -17,7 +19,7 @@ pub inline fn enable_irq() void {
     asm volatile ("cpsie i" ::: .{ .memory = true });
 }
 
-var CurrentTask: *Task = undefined;
+export var CurrentTask: *Task = undefined;
 
 pub const Scheduler = struct {
     task_count: usize = 0,
@@ -41,7 +43,7 @@ pub const Scheduler = struct {
         c.SCHEDULER_ENABLE_IT();
 
         // Call the start asm fn
-        while (true) {}
+        SchedulerStart();
 
         unreachable;
     }

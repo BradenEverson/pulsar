@@ -11,12 +11,15 @@ const c = @cImport({
 
 var quantum: u32 = 10;
 
-export fn timerIT() callconv(.c) void {
-    c.HAL_GPIO_TogglePin(c.LD2_GPIO_Port, c.LD2_Pin);
-}
+export fn timerIT() callconv(.c) void {}
 
 fn foo() void {
-    while (true) {}
+    while (true) {
+        c.HAL_GPIO_TogglePin(c.LD2_GPIO_Port, c.LD2_Pin);
+        c.HAL_Delay(100);
+        c.HAL_GPIO_TogglePin(c.LD2_GPIO_Port, c.LD2_Pin);
+        c.HAL_Delay(100);
+    }
 }
 
 export fn entry() callconv(.c) void {
