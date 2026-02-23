@@ -13,7 +13,7 @@ pub const Task = packed struct {
     sp: *u32,
     // id: u8,
 
-    pub fn init(task: *const fn () void, id: u8) Task {
+    pub fn init(task: *const fn () noreturn, id: u8) Task {
         _ = id;
         const stack = &stacks[tasks];
         initStack(stack);
