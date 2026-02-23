@@ -9,7 +9,7 @@ var tasks: usize = 0;
 /// Number of words the stack can hold
 pub const MAX_STACK_SIZE: usize = 100;
 
-export var stacks: [MAX_TASKS][MAX_STACK_SIZE]u32 align(8) = undefined;
+export var stacks: [MAX_TASKS][MAX_STACK_SIZE]u32 = undefined;
 
 pub const Task = extern struct {
     sp: *u32,
