@@ -32,7 +32,7 @@ static void MX_USART2_UART_Init(void);
 
 static size_t time_quantum;
 
-void SET_TIME_QUANTUM(uint32_t req_ms) {
+void SET_TIME_DELTA(uint32_t req_ms) {
     if (req_ms == 0) req_ms = 1; 
 
     time_quantum = req_ms;

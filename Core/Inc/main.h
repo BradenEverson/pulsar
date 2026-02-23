@@ -52,7 +52,7 @@ extern "C" {
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
-void SET_TIME_QUANTUM(size_t req);
+void SET_TIME_DELTA(size_t req);
 
 /* USER CODE BEGIN EFP */
 
