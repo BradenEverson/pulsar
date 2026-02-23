@@ -3,6 +3,8 @@
 const task = @import("task.zig");
 const Task = task.Task;
 
+const logger = @import("../logger.zig");
+
 extern fn SchedulerStart() void;
 
 const c = @cImport({
@@ -46,7 +48,11 @@ pub const Scheduler = struct {
     }
 
     pub fn start(self: *Scheduler) noreturn {
-        _ = self;
+        if (self.task_count == 0) {
+            logger.info("Error: No Tasks Registered!!!\r\n");
+            @panic("Invalid State");
+        }
+
         disable_irq();
 
         c.SCHEDULER_ENABLE_IT();

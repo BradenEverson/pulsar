@@ -19,7 +19,7 @@ export fn ScheduleNext() void {
 
 export fn entry() callconv(.c) void {
     logger.info("UGRtos: Bare Metal RTOS for testing Q-Learning Time Delta Allocation!\r\n");
-    c.SET_TIME_DELTA(100);
+    c.SET_TIME_DELTA(10);
 
     sched.register(tasks.foo, 'F');
     sched.register(tasks.bar, 'B');

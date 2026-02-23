@@ -8,12 +8,14 @@ const c = @cImport({
 
 pub fn foo() noreturn {
     while (true) {
-        c.HAL_GPIO_WritePin(c.LD2_GPIO_Port, c.LD2_Pin, c.GPIO_PIN_SET);
+        c.HAL_GPIO_TogglePin(c.LD2_GPIO_Port, c.LD2_Pin);
+        c.HAL_Delay(100);
     }
 }
 
 pub fn bar() noreturn {
     while (true) {
-        c.HAL_GPIO_WritePin(c.LD2_GPIO_Port, c.LD2_Pin, c.GPIO_PIN_RESET);
+        c.HAL_GPIO_TogglePin(c.GPIOB, c.GPIO_PIN_5);
+        c.HAL_Delay(100);
     }
 }
