@@ -33,10 +33,15 @@ pub const Scheduler = struct {
 
     /// Choose who goes next and allocate the proper time slice for them
     pub inline fn schedule(self: *Scheduler) void {
+        const prev = self.curr;
+
         const now = time.getTimeMicros();
 
         const delta = now - self.last_time;
         CurrentTask.metadata.run_time += delta;
+
+        // TODO: If we enter an IO wait queue instead don't do this
+        CurrentTask.metadata.time_put_on_wait = now;
 
         self.curr += 1;
         self.curr %= self.task_count;
@@ -44,6 +49,12 @@ pub const Scheduler = struct {
         CurrentTask = &self.tasks[self.curr];
 
         self.last_time = time.getTimeMicros();
+
+        if (self.curr != prev) {
+            // If we were not the last one running, need to update
+            // non-busy time spent waiting
+            CurrentTask.metadata.ready_wait_time += self.last_time - CurrentTask.metadata.time_put_on_wait;
+        }
     }
 
     pub fn register(self: *Scheduler, t: *const fn () noreturn, id: u8) void {
@@ -66,6 +77,11 @@ pub const Scheduler = struct {
         disable_irq();
 
         self.last_time = time.getTimeMicros();
+
+        for (0..self.task_count) |i| {
+            self.tasks[i].metadata.time_put_on_wait = self.last_time;
+        }
+
         c.SCHEDULER_ENABLE_IT();
 
         // Call the start asm fn

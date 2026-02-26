@@ -19,8 +19,6 @@ export fn ScheduleNext() void {
 }
 
 export fn buttonIt() void {
-    // TODO: Log out heuristics
-
     for (0..sched.task_count) |i| {
         sched.tasks[i].metadata.log();
     }

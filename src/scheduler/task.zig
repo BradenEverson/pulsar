@@ -22,6 +22,8 @@ pub const TaskData = extern struct {
     ready_wait_time: u32 = 0,
     task_id: u8 = 0,
 
+    time_put_on_wait: u32 = 0,
+
     pub fn log(self: *const TaskData) void {
         const entry = std.fmt.bufPrint(&log_buf, "{c},{},{},{}\r\n", .{ self.task_id, self.run_time, self.io_wait_time, self.ready_wait_time }) catch unreachable;
         logger.info(entry);
