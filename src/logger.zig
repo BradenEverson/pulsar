@@ -9,5 +9,5 @@ const c = @cImport({
 extern var huart2: c.UART_HandleTypeDef;
 
 pub inline fn info(msg: []const u8) void {
-    _ = c.HAL_UART_Transmit(&huart2, @ptrCast(msg), msg.len, 1000);
+    _ = c.HAL_UART_Transmit(&huart2, @ptrCast(msg), @truncate(msg.len), 1000);
 }

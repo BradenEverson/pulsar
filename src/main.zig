@@ -4,6 +4,7 @@ const std = @import("std");
 const scheduler = @import("scheduler/scheduler.zig");
 const logger = @import("logger.zig");
 const tasks = @import("tasks.zig");
+const time = @import("time.zig");
 
 const c = @cImport({
     @cDefine("USE_HAL_DRIVER", {});
@@ -18,7 +19,7 @@ export fn ScheduleNext() void {
 }
 
 export fn buttonIt() void {
-    logger.info("Button pressed\r\n");
+    // TODO: Log out heuristics
 }
 
 export fn entry() callconv(.c) void {

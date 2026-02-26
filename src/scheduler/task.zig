@@ -11,10 +11,17 @@ pub const MAX_STACK_SIZE: usize = 100;
 
 export var stacks: [MAX_TASKS][MAX_STACK_SIZE]u32 = undefined;
 
+pub const TaskData = extern struct {
+    run_time: u32 = 0,
+    io_wait_time: u32 = 0,
+    ready_wait_time: u32 = 0,
+};
+
 pub const Task = extern struct {
     sp: *u32,
     id: [*:0]const u8,
     agent: QAgent = .{},
+    metadata: TaskData = .{},
 
     pub fn init(task: *const fn () noreturn, id: [*:0]const u8) Task {
         const stack = &stacks[tasks];

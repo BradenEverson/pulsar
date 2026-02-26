@@ -22,6 +22,7 @@
 
 UART_HandleTypeDef huart2;
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim5;
 
 extern void entry(void);
 extern void buttonIt(void);
@@ -40,6 +41,40 @@ void SET_TIME_DELTA(uint32_t req_ms) {
     uint32_t new_period = (req_ms * 1000U) - 1U;
 
     __HAL_TIM_SET_AUTORELOAD(&htim2, new_period);
+}
+
+static void MX_TIM5_Init(void)
+{
+    uint32_t uwTimclock = 0U;
+    uint32_t uwPrescalerValue = 0U;
+
+    __HAL_RCC_TIM5_CLK_ENABLE();
+
+    if ((RCC->CFGR & RCC_CFGR_PPRE1) == 0) {
+        uwTimclock = HAL_RCC_GetPCLK1Freq();
+    } else {
+        uwTimclock = HAL_RCC_GetPCLK1Freq() * 2;
+    }
+
+    // Set prescaler to tick every 1 microsecond
+    uwPrescalerValue = (uint32_t)((uwTimclock / 1000000U) - 1U);
+
+    htim5.Instance = TIM5;
+    htim5.Init.Prescaler = uwPrescalerValue;
+    htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim5.Init.Period = 0xFFFFFFFF;
+    htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+
+    if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    if (HAL_TIM_Base_Start(&htim5) != HAL_OK)
+    {
+        Error_Handler();
+    }
 }
 
 
@@ -113,7 +148,11 @@ int main(void)
 
     MX_GPIO_Init();
     MX_USART2_UART_Init();
+
+    // Preemption Clock
     MX_TIM2_Init();
+    // Microsecond Counter
+    MX_TIM5_Init();
 
     HAL_TIM_Base_Start_IT(&htim2);
 

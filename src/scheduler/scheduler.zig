@@ -1,6 +1,7 @@
 //! Scheduler control for all the tasks
 
 const task = @import("task.zig");
+const time = @import("../time.zig");
 const Task = task.Task;
 
 const logger = @import("../logger.zig");
@@ -27,6 +28,8 @@ pub const Scheduler = struct {
     task_count: usize = 0,
     curr: usize = 0,
     tasks: [task.MAX_TASKS]Task = undefined,
+
+    last_time: u32 = 0,
 
     /// Choose who goes next and allocate the proper time slice for them
     pub inline fn schedule(self: *Scheduler) void {
@@ -55,6 +58,7 @@ pub const Scheduler = struct {
 
         disable_irq();
 
+        self.last_time = time.getTimeMicros();
         c.SCHEDULER_ENABLE_IT();
 
         // Call the start asm fn
