@@ -173,6 +173,10 @@ void TIM1_UP_TIM10_IRQHandler(void)
   /* USER CODE END TIM1_UP_TIM10_IRQn 1 */
 }
 
+void EXTI15_10_IRQHandler(void) {
+    HAL_GPIO_EXTI_IRQHandler(B1_Pin);
+}
+
 /* USER CODE BEGIN 1 */
 
 /* USER CODE END 1 */

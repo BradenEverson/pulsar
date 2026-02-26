@@ -36,7 +36,7 @@ pub const Scheduler = struct {
         CurrentTask = &self.tasks[self.curr];
     }
 
-    pub fn register(self: *Scheduler, t: *const fn () noreturn, id: u8) void {
+    pub fn register(self: *Scheduler, t: *const fn () noreturn, id: [*:0]const u8) void {
         const t_constructed = Task.init(t, id);
         self.tasks[self.task_count] = t_constructed;
 

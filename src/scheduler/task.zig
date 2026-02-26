@@ -13,10 +13,10 @@ export var stacks: [MAX_TASKS][MAX_STACK_SIZE]u32 = undefined;
 
 pub const Task = extern struct {
     sp: *u32,
-    id: u8,
+    id: [*:0]const u8,
     agent: QAgent = .{},
 
-    pub fn init(task: *const fn () noreturn, id: u8) Task {
+    pub fn init(task: *const fn () noreturn, id: [*:0]const u8) Task {
         const stack = &stacks[tasks];
         initStack(stack);
 

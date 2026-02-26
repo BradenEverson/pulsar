@@ -17,12 +17,16 @@ export fn ScheduleNext() void {
     sched.schedule();
 }
 
+export fn buttonIt() void {
+    logger.info("Button pressed\r\n");
+}
+
 export fn entry() callconv(.c) void {
     logger.info("UGRtos: Bare Metal RTOS for testing Q-Learning Time Delta Allocation!\r\n");
     c.SET_TIME_DELTA(10);
 
-    sched.register(tasks.foo, 'F');
-    sched.register(tasks.bar, 'B');
+    sched.register(tasks.foo, "Foo");
+    sched.register(tasks.bar, "Bar");
 
     sched.start();
 }

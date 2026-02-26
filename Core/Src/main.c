@@ -24,6 +24,7 @@ UART_HandleTypeDef huart2;
 TIM_HandleTypeDef htim2;
 
 extern void entry(void);
+extern void buttonIt(void);
 
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
@@ -205,6 +206,9 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
+    HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
     GPIO_InitStruct.Pin = LD2_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -217,6 +221,13 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+    if (GPIO_Pin == B1_Pin) {
+        buttonIt();
+    }
+}
+
 
 /**
  * @brief  Period elapsed callback in non blocking mode
