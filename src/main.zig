@@ -15,7 +15,7 @@ const c = @cImport({
 var sched = scheduler.Scheduler{};
 
 export fn ScheduleNext() void {
-    sched.schedule();
+    sched.preempt_schedule();
 }
 
 export fn buttonIt() void {

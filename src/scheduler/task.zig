@@ -50,6 +50,16 @@ pub const Task = extern struct {
             .metadata = .{ .task_id = id },
         };
     }
+
+    pub fn getDelta(self: *Task) usize {
+        const tot = self.metadata.run_time + self.metadata.io_wait_time;
+
+        const tot_f: f32 = @floatFromInt(tot);
+        const cpu_f: f32 = @floatFromInt(self.metadata.run_time);
+        const wait_f: f32 = @floatFromInt(self.metadata.io_wait_time);
+
+        return self.agent.update(cpu_f / tot_f, wait_f / tot_f);
+    }
 };
 
 fn initStack(stack: *[MAX_STACK_SIZE]u32) void {

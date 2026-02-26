@@ -32,7 +32,7 @@ pub const Scheduler = struct {
     last_time: u32 = 0,
 
     /// Choose who goes next and allocate the proper time slice for them
-    pub inline fn schedule(self: *Scheduler) void {
+    pub inline fn preempt_schedule(self: *Scheduler) void {
         const prev = self.curr;
 
         const now = time.getTimeMicros();
@@ -41,12 +41,16 @@ pub const Scheduler = struct {
         CurrentTask.metadata.run_time += delta;
 
         // TODO: If we enter an IO wait queue instead don't do this
+        // we might just want a different version of schedule
         CurrentTask.metadata.time_put_on_wait = now;
 
         self.curr += 1;
         self.curr %= self.task_count;
 
         CurrentTask = &self.tasks[self.curr];
+
+        const new_delta = CurrentTask.getDelta();
+        time.setDelta(new_delta);
 
         self.last_time = time.getTimeMicros();
 

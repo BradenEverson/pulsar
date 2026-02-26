@@ -1,5 +1,6 @@
 //! Discrete Q-Table Bins for CPU utilization percents
 const std = @import("std");
+const rand = @import("../rand.zig");
 
 /// Learning Rate
 const ALPHA: f32 = 0.1;
@@ -68,7 +69,8 @@ pub const QAgent = extern struct {
     /// How much we want to punish very high or very low deltas
     const P_LARGE_SMALL: f32 = 100;
 
-    pub inline fn update(self: *QAgent, cpu: f32, wait: f32, rand: std.Random) usize {
+    pub inline fn update(self: *QAgent, cpu: f32, wait: f32) usize {
+        const rng = rand.getRand();
         // TODO: Better reward
         // const reward = (P_NO_WAIT * cpuUptimeReward(cpu, wait)) -
         //     (P_LARGE_SMALL * self.distPenalty());
@@ -86,9 +88,9 @@ pub const QAgent = extern struct {
 
         self.q_table[self.current_state][@intFromEnum(self.last_action)] = ALPHA * (reward + (GAMMA * max_q_next));
 
-        if (rand.float(f32) < EPSILON) {
+        if (rng.float(f32) < EPSILON) {
             // Random exploration
-            self.last_action = @enumFromInt(rand.intRangeAtMost(usize, 0, NumActions - 1));
+            self.last_action = @enumFromInt(rng.intRangeAtMost(usize, 0, NumActions - 1));
         } else {
             var best_action: Action = .Keep;
             inline for (1..NumActions) |i| {
