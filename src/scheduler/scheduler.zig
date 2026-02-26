@@ -33,13 +33,20 @@ pub const Scheduler = struct {
 
     /// Choose who goes next and allocate the proper time slice for them
     pub inline fn schedule(self: *Scheduler) void {
+        const now = time.getTimeMicros();
+
+        const delta = now - self.last_time;
+        CurrentTask.metadata.run_time += delta;
+
         self.curr += 1;
         self.curr %= self.task_count;
 
         CurrentTask = &self.tasks[self.curr];
+
+        self.last_time = time.getTimeMicros();
     }
 
-    pub fn register(self: *Scheduler, t: *const fn () noreturn, id: [*:0]const u8) void {
+    pub fn register(self: *Scheduler, t: *const fn () noreturn, id: u8) void {
         const t_constructed = Task.init(t, id);
         self.tasks[self.task_count] = t_constructed;
 

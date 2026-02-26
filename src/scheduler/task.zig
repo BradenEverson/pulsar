@@ -1,6 +1,9 @@
 //! Task definition
 
+const std = @import("std");
+
 const QAgent = @import("q_agent.zig").QAgent;
+const logger = @import("../logger.zig");
 
 /// Number of tasks we support at a time
 pub const MAX_TASKS: usize = 10;
@@ -11,19 +14,27 @@ pub const MAX_STACK_SIZE: usize = 100;
 
 export var stacks: [MAX_TASKS][MAX_STACK_SIZE]u32 = undefined;
 
+var log_buf: [1024]u8 = undefined;
+
 pub const TaskData = extern struct {
     run_time: u32 = 0,
     io_wait_time: u32 = 0,
     ready_wait_time: u32 = 0,
+    task_id: u8 = 0,
+
+    pub fn log(self: *const TaskData) void {
+        const entry = std.fmt.bufPrint(&log_buf, "{c},{},{},{}\r\n", .{ self.task_id, self.run_time, self.io_wait_time, self.ready_wait_time });
+        logger.info(entry);
+    }
 };
 
 pub const Task = extern struct {
     sp: *u32,
-    id: [*:0]const u8,
+    id: u8,
     agent: QAgent = .{},
     metadata: TaskData = .{},
 
-    pub fn init(task: *const fn () noreturn, id: [*:0]const u8) Task {
+    pub fn init(task: *const fn () noreturn, id: u8) Task {
         const stack = &stacks[tasks];
         initStack(stack);
 
