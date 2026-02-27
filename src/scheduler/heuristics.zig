@@ -19,12 +19,12 @@ var entries: FixedBufferAl(TaskData, MAX_LOGS) = .{};
 
 pub fn addData(data: TaskData) void {
     entries.append(data) catch {
-        logger.info("Buffer Reached Capacity\r\n");
+        sendAllData();
+        @panic("We're done here\n");
     };
 }
 
 pub fn sendAllData() void {
-    logger.info("task_id,timestamp_us,total_rt,total_io_wt,total_ready_wt,delta\r\n");
     for (0..entries.len) |i| {
         entries.vals[i].log();
     }

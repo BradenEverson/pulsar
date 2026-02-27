@@ -59,7 +59,9 @@ pub const QAgent = extern struct {
 
         const avg_wait_excluding_me = ((avg_sys_wait * num_tasks) - ready_wait) / (num_tasks - 1);
 
-        const reward = cpu - (READY_WAIT_WEIGHT * ready_wait) + io_wait - (FAIRNESS_PENALTY * avg_wait_excluding_me);
+        const best_cpu_avg_wait = 1 / num_tasks;
+
+        const reward = cpu - (READY_WAIT_WEIGHT * ready_wait) + io_wait - (FAIRNESS_PENALTY * (avg_wait_excluding_me - best_cpu_avg_wait));
 
         const next_state = getStateFromPct(cpu);
         var max_q_next = self.q_table[next_state][0];
