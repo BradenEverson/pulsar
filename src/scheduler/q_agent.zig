@@ -51,11 +51,12 @@ pub const QAgent = extern struct {
         }
     }
 
-    pub inline fn update(self: *QAgent, cpu: f32, wait: f32, io: f32) usize {
-        const rng = rand.getRand();
-        // TODO: Better reward
+    const FAIRNESS_PENALTY: f32 = 10;
 
-        const reward = (cpu - wait) + io;
+    pub inline fn update(self: *QAgent, cpu: f32, wait: f32, io: f32, total_wait: f32) usize {
+        const rng = rand.getRand();
+
+        const reward = (cpu - wait) + io - FAIRNESS_PENALTY * total_wait;
 
         const next_state = getStateFromPct(cpu);
         var max_q_next = self.q_table[next_state][0];

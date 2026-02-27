@@ -29,6 +29,9 @@ pub const Scheduler = struct {
     curr: usize = 0,
     tasks: [task.MAX_TASKS]Task = undefined,
 
+    total_system_wait: usize = 0,
+    avg_system_wait: f32 = 0,
+
     last_time: u32 = 0,
 
     /// Choose who goes next and allocate the proper time slice for them
@@ -50,16 +53,26 @@ pub const Scheduler = struct {
 
         CurrentTask = &self.tasks[self.curr];
 
-        const new_delta = CurrentTask.getDelta();
-        time.setDelta(new_delta);
-
         self.last_time = time.getTimeMicros();
 
         if (self.curr != prev) {
             // If we were not the last one running, need to update
             // non-busy time spent waiting
             CurrentTask.metadata.ready_wait_time = self.last_time - CurrentTask.metadata.time_put_on_wait;
+            self.total_system_wait += CurrentTask.metadata.ready_wait_time;
         }
+
+        self.calcAvgWait();
+
+        const new_delta = CurrentTask.getDelta(self.avg_system_wait);
+        time.setDelta(new_delta);
+    }
+
+    pub inline fn calcAvgWait(self: *Scheduler) void {
+        const starve_f: f32 = @floatFromInt(self.total_system_wait);
+        const now_f: f32 = @floatFromInt(self.total_system_wait);
+        const len_f: f32 = @floatFromInt(self.task_count);
+        self.avg_system_wait = starve_f / now_f / len_f;
     }
 
     pub fn register(self: *Scheduler, t: *const fn () noreturn, id: u8) void {
