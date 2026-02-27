@@ -36,11 +36,18 @@ pub const QAgent = extern struct {
     current_state: usize = 0,
     last_action: Action = .Keep,
 
+    const MIN_DELTA: usize = 1;
+    const MAX_DELTA: usize = 50;
+
     pub fn updateDelta(self: *QAgent) void {
         switch (self.last_action) {
-            .Shorten => self.deltas[self.current_state] -= 1,
+            .Shorten => if (self.deltas[self.current_state] > MIN_DELTA) {
+                self.deltas[self.current_state] -= 1;
+            },
             .Keep => {},
-            .Lengthen => self.deltas[self.current_state] += 1,
+            .Lengthen => if (self.deltas[self.current_state] < MAX_DELTA) {
+                self.deltas[self.current_state] += 1;
+            },
         }
     }
 
