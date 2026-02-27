@@ -1,10 +1,10 @@
 //! Scheduler control for all the tasks
 
 const task = @import("task.zig");
-const time = @import("../time.zig");
+const time = @import("../hal/time.zig");
 const Task = task.Task;
 
-const logger = @import("../logger.zig");
+const logger = @import("../hal/logger.zig");
 
 extern fn SchedulerStart() void;
 

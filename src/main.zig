@@ -1,10 +1,12 @@
 //! Zig Entrypoint
 
 const std = @import("std");
-const scheduler = @import("scheduler/scheduler.zig");
-const logger = @import("logger.zig");
+
+const logger = @import("hal/logger.zig");
+const time = @import("hal/time.zig");
+
 const tasks = @import("tasks.zig");
-const time = @import("time.zig");
+const scheduler = @import("scheduler/scheduler.zig");
 
 const c = @cImport({
     @cDefine("USE_HAL_DRIVER", {});

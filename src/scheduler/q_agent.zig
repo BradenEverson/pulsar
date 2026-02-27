@@ -1,6 +1,6 @@
 //! Discrete Q-Table Bins for CPU utilization percents
 const std = @import("std");
-const rand = @import("../rand.zig");
+const rand = @import("../hal/rand.zig");
 
 /// Learning Rate
 const ALPHA: f32 = 0.1;

@@ -3,7 +3,7 @@
 const std = @import("std");
 
 const QAgent = @import("q_agent.zig").QAgent;
-const logger = @import("../logger.zig");
+const logger = @import("../hal/logger.zig");
 
 /// Number of tasks we support at a time
 pub const MAX_TASKS: usize = 10;
