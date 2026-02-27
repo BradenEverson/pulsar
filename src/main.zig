@@ -25,7 +25,7 @@ export fn ScheduleNext() void {
 export fn buttonIt() void {
     scheduler.disable_irq();
     heuristics.sendAllData();
-    scheduler.enable_irq();
+    @panic("We should not recover from this");
 }
 
 export fn entry() callconv(.c) void {

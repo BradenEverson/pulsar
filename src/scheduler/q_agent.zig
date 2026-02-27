@@ -57,7 +57,10 @@ pub const QAgent = extern struct {
     pub inline fn update(self: *QAgent, cpu: f32, ready_wait: f32, io_wait: f32, avg_sys_wait: f32) usize {
         const rng = rand.getRand();
 
-        const reward = cpu - (READY_WAIT_WEIGHT * ready_wait) + io_wait - (FAIRNESS_PENALTY * avg_sys_wait);
+        // TODO: 2 and 1 should be # tasks, # tasks - 1
+        const avg_wait_excluding_me = ((avg_sys_wait * 2) - ready_wait) / 1;
+
+        const reward = cpu - (READY_WAIT_WEIGHT * ready_wait) + io_wait - (FAIRNESS_PENALTY * avg_wait_excluding_me);
 
         const next_state = getStateFromPct(cpu);
         var max_q_next = self.q_table[next_state][0];

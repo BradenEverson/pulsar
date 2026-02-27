@@ -26,7 +26,7 @@ pub inline fn enable_irq() void {
 export var CurrentTask: *Task = undefined;
 
 /// How many context switches between logging
-const LOG_EVERY: usize = 100;
+const LOG_EVERY: usize = 10;
 
 pub const Scheduler = struct {
     task_count: usize = 0,
