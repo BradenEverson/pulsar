@@ -52,7 +52,7 @@ pub const QAgent = extern struct {
     }
 
     const FAIRNESS_PENALTY: f32 = 10;
-    const READY_WAIT_WEIGHT: f32 = 2;
+    const READY_WAIT_WEIGHT: f32 = 1;
 
     pub inline fn update(self: *QAgent, cpu: f32, ready_wait: f32, io_wait: f32, avg_sys_wait: f32) usize {
         const rng = rand.getRand();
