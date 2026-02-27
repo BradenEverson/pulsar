@@ -38,7 +38,8 @@ pub const Scheduler = struct {
         const now = time.getTimeMicros();
 
         const delta = now - self.last_time;
-        CurrentTask.metadata.run_time += delta;
+        // CurrentTask.metadata.total_run_time += delta;
+        CurrentTask.metadata.run_time = delta;
 
         // TODO: If we enter an IO wait queue instead don't do this
         // we might just want a different version of schedule
@@ -57,7 +58,7 @@ pub const Scheduler = struct {
         if (self.curr != prev) {
             // If we were not the last one running, need to update
             // non-busy time spent waiting
-            CurrentTask.metadata.ready_wait_time += self.last_time - CurrentTask.metadata.time_put_on_wait;
+            CurrentTask.metadata.ready_wait_time = self.last_time - CurrentTask.metadata.time_put_on_wait;
         }
     }
 

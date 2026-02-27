@@ -17,6 +17,10 @@ export var stacks: [MAX_TASKS][MAX_STACK_SIZE]u32 = undefined;
 var log_buf: [1024]u8 = undefined;
 
 pub const TaskData = extern struct {
+    total_run_time: u32 = 0,
+    total_ready_wait_time: u32 = 0,
+    total_io_wait_time: u32 = 0,
+
     run_time: u32 = 0,
     io_wait_time: u32 = 0,
     ready_wait_time: u32 = 0,
@@ -25,7 +29,7 @@ pub const TaskData = extern struct {
     time_put_on_wait: u32 = 0,
 
     pub fn log(self: *const TaskData) void {
-        const entry = std.fmt.bufPrint(&log_buf, "{c},{},{},{}\r\n", .{ self.task_id, self.run_time, self.io_wait_time, self.ready_wait_time }) catch unreachable;
+        const entry = std.fmt.bufPrint(&log_buf, "{c},{},{},{}\r\n", .{ self.task_id, self.total_run_time, self.total_io_wait_time, self.total_ready_wait_time }) catch unreachable;
         logger.info(entry);
     }
 };
@@ -52,6 +56,9 @@ pub const Task = extern struct {
     }
 
     pub fn getDelta(self: *Task) usize {
+        self.metadata.total_run_time += self.metadata.run_time;
+        self.metadata.total_ready_wait_time += self.metadata.ready_wait_time;
+
         const tot = self.metadata.run_time + self.metadata.io_wait_time;
 
         const tot_f: f32 = @floatFromInt(tot);
