@@ -23,12 +23,12 @@ pub inline fn ioCall(call: io.IoCall) void {
     sched.ioCall(call);
 }
 
-export fn sleepIt() void {
-    logger.info("woke up from sleep!\r\n");
-}
-
 export fn ScheduleNext() void {
     sched.schedule();
+}
+
+export fn sleepIt() void {
+    sched.io_manager.sleepRetIt();
 }
 
 export fn gpioIt(port: usize, pin: usize) void {
@@ -45,10 +45,9 @@ export fn buttonIt() void {
 
 export fn entry() callconv(.c) void {
     c.SET_TIME_DELTA(10);
-    c.SetTimerMs(1000);
 
-    sched.register(tasks.foo, 'F');
-    sched.register(tasks.bar, 'B');
+    sched.register(tasks.ioBlinky, 'B');
+    sched.register(tasks.cpuBlinky, 'C');
 
     sched.start();
 }

@@ -2,6 +2,12 @@
 
 const std = @import("std");
 
+const c = @cImport({
+    @cDefine("USE_HAL_DRIVER", {});
+    @cDefine("STM32F446xx", {});
+    @cInclude("main.h");
+});
+
 const time = @import("../hal/time.zig");
 const task = @import("task.zig");
 const Task = task.Task;
@@ -9,6 +15,8 @@ const Task = task.Task;
 const logger = @import("../hal/logger.zig");
 
 const TaskQueue = @import("fixed_buffer.zig").FixedBufferArrayList(*Task, task.MAX_TASKS);
+
+var Sleeper: ?*Task = null;
 
 pub const GpioPort = enum(usize) {
     A,
@@ -28,6 +36,7 @@ pub const Gpio = extern struct {
 
 pub const IoCall = union(enum) {
     GpioWait: Gpio,
+    SleepMs: usize,
     UartTransmit: []const u8,
     UartReceive: []u8,
 };
@@ -49,8 +58,37 @@ pub const IoManager = extern struct {
 
                 gpio_queues[gpio.toIndex()].pushFront(t) catch unreachable;
             },
+
+            .SleepMs => |sleep| {
+                // Currently can only support one sleeping task at a time
+                // TODO: We can do some cool math where if a new task tries to sleep for less time we switch the timer to that then resume to the next. Out of scope for this MVP I believe.
+                if (Sleeper) |_| {
+                    logger.info("TODO: Support multiple sleeping tasks\r\n");
+                    unreachable;
+                }
+
+                t.metadata.time_put_on_wait = time.getTimeMicros();
+                t.state = .io_waiting;
+                Sleeper = t;
+
+                c.SetTimerMs(sleep);
+            },
             else => {},
         }
+    }
+
+    pub inline fn sleepRetIt(self: *IoManager) void {
+        if (Sleeper) |t| {
+            const now = time.getTimeMicros();
+
+            t.metadata.io_wait_time = now - t.metadata.time_put_on_wait;
+            t.metadata.time_put_on_wait = now;
+            t.state = .ready;
+
+            self.ready_queue_ref.pushFront(t) catch unreachable;
+        }
+
+        Sleeper = null;
     }
 
     pub inline fn gpioRetIt(self: *IoManager, gpio: Gpio) void {
