@@ -38,7 +38,7 @@ pub const QAgent = extern struct {
     last_action: Action = .Keep,
 
     const MIN_DELTA: usize = 1;
-    const MAX_DELTA: usize = 50;
+    const MAX_DELTA: usize = 200;
 
     pub fn updateDelta(self: *QAgent) void {
         switch (self.last_action) {
@@ -55,6 +55,15 @@ pub const QAgent = extern struct {
     const FAIRNESS_PENALTY: f32 = 10;
     const READY_WAIT_WEIGHT: f32 = 1;
 
+    const B: f32 = 0.05;
+    const K: f32 = 0.04;
+
+    pub inline fn exponentialDeltaPunishment(self: *QAgent) f32 {
+        const d: f32 = @floatFromInt(self.deltas[self.current_state]);
+
+        return B + std.math.exp(K * (d - 20));
+    }
+
     pub inline fn update(self: *QAgent, cpu: f32, ready_wait: f32, io_wait: f32, avg_sys_wait: f32, num_tasks: f32) usize {
         const rng = rand.getRand();
 
@@ -62,7 +71,11 @@ pub const QAgent = extern struct {
 
         const best_cpu_avg_wait = 1 / num_tasks;
 
-        const reward = cpu - (READY_WAIT_WEIGHT * ready_wait) + io_wait - (FAIRNESS_PENALTY * (avg_wait_excluding_me - best_cpu_avg_wait));
+        var reward = cpu - (READY_WAIT_WEIGHT * ready_wait) + io_wait - (FAIRNESS_PENALTY * (avg_wait_excluding_me - best_cpu_avg_wait));
+
+        if (self.last_action != .Shorten) {
+            reward = reward - self.exponentialDeltaPunishment();
+        }
 
         const next_state = getStateFromPct(cpu);
         var max_q_next = self.q_table[next_state][0];
