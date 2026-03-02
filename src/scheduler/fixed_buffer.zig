@@ -20,6 +20,18 @@ pub fn FixedBufferArrayList(T: type, max: comptime_int) type {
             self.len += 1;
         }
 
+        pub fn pushFront(self: *Self, val: T) !void {
+            if (self.len == self.vals.len) return error.BufferFull;
+
+            for (0..self.len) |i| {
+                const rev = self.len - i;
+                self.vals[rev] = self.vals[rev - 1];
+            }
+
+            self.vals[0] = val;
+            self.len += 1;
+        }
+
         pub fn pop(self: *Self) ?T {
             if (self.len == 0) return null;
 
@@ -79,5 +91,42 @@ test "Pop" {
     try std.testing.expectEqual(2, foo.pop().?);
     try std.testing.expectEqual(1, foo.pop().?);
     try std.testing.expectEqual(0, foo.pop().?);
+    try std.testing.expectEqual(null, foo.pop());
+}
+
+test "Push front" {
+    const TenIntBuffer = FixedBufferArrayList(i32, 10);
+
+    var foo = TenIntBuffer{};
+    try foo.append(0);
+
+    const val = foo.vals[0];
+
+    try std.testing.expectEqual(0, val);
+
+    try foo.pushFront(1);
+    try foo.pushFront(2);
+    try foo.pushFront(3);
+    try foo.pushFront(4);
+    try foo.pushFront(5);
+    try foo.pushFront(6);
+    try foo.pushFront(7);
+    try foo.pushFront(8);
+    try foo.pushFront(9);
+
+    const err = foo.pushFront(10);
+
+    try std.testing.expectError(error.BufferFull, err);
+
+    try std.testing.expectEqual(0, foo.pop().?);
+    try std.testing.expectEqual(1, foo.pop().?);
+    try std.testing.expectEqual(2, foo.pop().?);
+    try std.testing.expectEqual(3, foo.pop().?);
+    try std.testing.expectEqual(4, foo.pop().?);
+    try std.testing.expectEqual(5, foo.pop().?);
+    try std.testing.expectEqual(6, foo.pop().?);
+    try std.testing.expectEqual(7, foo.pop().?);
+    try std.testing.expectEqual(8, foo.pop().?);
+    try std.testing.expectEqual(9, foo.pop().?);
     try std.testing.expectEqual(null, foo.pop());
 }
