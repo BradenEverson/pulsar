@@ -31,7 +31,7 @@ pub const TaskData = extern struct {
     ready_wait_time: u32 = 0,
     task_id: u8 = 0,
 
-    time_put_on_wait: u32 = 0,
+    last_time_switched: u32 = 0,
 
     pub fn log(self: *const TaskData) void {
         const ready_wait: f32 = @floatFromInt(self.total_ready_wait_time);
@@ -40,7 +40,7 @@ pub const TaskData = extern struct {
 
         const starve = (ready_wait) / (ready_wait + io_wait + runtime);
 
-        logger.log("{c},{},{},{},{},{}\r\n", .{ self.task_id, self.total_run_time, self.total_io_wait_time, self.total_ready_wait_time, starve, self.delta });
+        logger.log("{c},{},{},{},{},{},{}\r\n", .{ self.task_id, self.timestamp, self.total_run_time, self.total_io_wait_time, self.total_ready_wait_time, starve, self.delta });
     }
 };
 
@@ -51,6 +51,7 @@ pub const Task = extern struct {
     agent: QAgent = .{},
     state: TaskState = .ready,
     metadata: TaskData = .{},
+    running: bool = false,
 
     pub fn init(task: *const fn () noreturn, id: u8) Task {
         const stack = &stacks[tasks];

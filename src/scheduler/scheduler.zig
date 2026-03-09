@@ -41,8 +41,8 @@ pub const Scheduler = struct {
     total_system_wait: usize = 0,
     avg_system_wait: f32 = 0,
 
-    last_time: u32 = 0,
     switches: u32 = 0,
+    comptime trace: bool = true,
 
     ready_queue: TaskQueue = .{},
     io_manager: IoManager = .{},
@@ -52,31 +52,38 @@ pub const Scheduler = struct {
         ForcePreempt();
     }
 
-    /// Choose who goes next and allocate the proper time slice for them
     pub inline fn schedule(self: *Scheduler) void {
         const now = time.getTimeMicros();
 
-        const delta = now - self.last_time;
+        const delta = now - CurrentTask.metadata.last_time_switched;
         CurrentTask.metadata.run_time = delta;
 
-        CurrentTask.metadata.time_put_on_wait = now;
+        CurrentTask.metadata.last_time_switched = now;
 
         if (CurrentTask.state == .ready) {
             self.ready_queue.pushFront(CurrentTask) catch unreachable;
         }
         CurrentTask = self.ready_queue.pop().?;
 
-        CurrentTask.metadata.ready_wait_time = time.getTimeMicros() - CurrentTask.metadata.time_put_on_wait;
+        CurrentTask.metadata.ready_wait_time = time.getTimeMicros() - CurrentTask.metadata.last_time_switched;
         self.total_system_wait += CurrentTask.metadata.ready_wait_time;
 
         self.calcAvgWait();
+
         const new_delta = CurrentTask.getDelta(self.avg_system_wait, self.ready_queue.len);
 
-        CurrentTask.metadata.timestamp = time.getTimeMicros();
-        heuristics.addData(CurrentTask.metadata);
+        if (self.trace) {
+            CurrentTask.metadata.timestamp = time.getTimeMicros();
+
+            CurrentTask.metadata.total_run_time += CurrentTask.metadata.run_time;
+            CurrentTask.metadata.total_ready_wait_time += CurrentTask.metadata.ready_wait_time;
+            CurrentTask.metadata.total_io_wait_time += CurrentTask.metadata.io_wait_time;
+
+            heuristics.addData(CurrentTask.metadata);
+        }
 
         time.setDelta(new_delta);
-        self.last_time = time.getTimeMicros();
+        CurrentTask.metadata.last_time_switched = now;
     }
 
     pub inline fn calcAvgWait(self: *Scheduler) void {
@@ -107,10 +114,10 @@ pub const Scheduler = struct {
         disable_irq();
 
         self.io_manager.ready_queue_ref = &self.ready_queue;
-        self.last_time = time.getTimeMicros();
+        const start_time = time.getTimeMicros();
 
         for (0..self.task_count) |i| {
-            self.tasks[i].metadata.time_put_on_wait = self.last_time;
+            self.tasks[i].metadata.last_time_switched = start_time;
         }
 
         c.SCHEDULER_ENABLE_IT();

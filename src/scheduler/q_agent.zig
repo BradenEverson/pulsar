@@ -4,7 +4,7 @@ const rand = @import("../hal/rand.zig");
 const logger = @import("../hal/logger.zig");
 
 /// Learning Rate
-const ALPHA: f32 = 0.001;
+const ALPHA: f32 = 0.01;
 
 /// Discount Factor, importance of future rewards
 const GAMMA: f32 = 0.9;
@@ -16,7 +16,7 @@ pub const QAgent = extern struct {
     /// Number of times we split up the CPU utilization percents
     /// into discrete buckets
     /// Ex: 10 buckets gives us 0-10%, 11-20%, ...
-    const BUCKETS: usize = 3;
+    const BUCKETS: usize = 5;
     const BUCKETS_F: f32 = @floatFromInt(BUCKETS);
 
     pub inline fn getStateFromPct(cpu_pct: f32) usize {
@@ -58,12 +58,6 @@ pub const QAgent = extern struct {
 
     const B: f32 = 0.002;
     const K: f32 = 1;
-
-    pub fn sigmoidPunishment(self: *QAgent) f32 {
-        const d: f32 = @floatFromInt(self.deltas[self.current_state]);
-
-        return 1 / (1 + std.math.pow(f32, std.math.e, -1 * (d - 45)));
-    }
 
     pub inline fn exponentialDeltaPunishment(self: *QAgent) f32 {
         const d: f32 = @floatFromInt(self.deltas[self.current_state]);

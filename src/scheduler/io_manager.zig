@@ -76,7 +76,7 @@ pub const IoManager = extern struct {
         _ = self;
         switch (io) {
             .GpioWait => |gpio| {
-                t.metadata.time_put_on_wait = time.getTimeMicros();
+                t.metadata.last_time_switched = time.getTimeMicros();
                 t.state = .io_waiting;
 
                 gpio_queues[gpio.toIndex()].pushFront(t) catch unreachable;
@@ -88,7 +88,7 @@ pub const IoManager = extern struct {
                     unreachable;
                 }
 
-                t.metadata.time_put_on_wait = time.getTimeMicros();
+                t.metadata.last_time_switched = time.getTimeMicros();
                 t.state = .io_waiting;
                 uart_queues[idx].write = t;
 
@@ -102,7 +102,7 @@ pub const IoManager = extern struct {
                     unreachable;
                 }
 
-                t.metadata.time_put_on_wait = time.getTimeMicros();
+                t.metadata.last_time_switched = time.getTimeMicros();
                 t.state = .io_waiting;
                 uart_queues[idx].read = t;
 
@@ -118,7 +118,7 @@ pub const IoManager = extern struct {
                     unreachable;
                 }
 
-                t.metadata.time_put_on_wait = time.getTimeMicros();
+                t.metadata.last_time_switched = time.getTimeMicros();
                 t.state = .io_waiting;
                 Sleeper = t;
 
@@ -131,8 +131,8 @@ pub const IoManager = extern struct {
         if (Sleeper) |t| {
             const now = time.getTimeMicros();
 
-            t.metadata.io_wait_time = now - t.metadata.time_put_on_wait;
-            t.metadata.time_put_on_wait = now;
+            t.metadata.io_wait_time = now - t.metadata.last_time_switched;
+            t.metadata.last_time_switched = now;
             t.state = .ready;
 
             self.ready_queue_ref.pushFront(t) catch unreachable;
@@ -146,8 +146,8 @@ pub const IoManager = extern struct {
         if (uart_queues[idx].write) |t| {
             const now = time.getTimeMicros();
 
-            t.metadata.io_wait_time = now - t.metadata.time_put_on_wait;
-            t.metadata.time_put_on_wait = now;
+            t.metadata.io_wait_time = now - t.metadata.last_time_switched;
+            t.metadata.last_time_switched = now;
             t.state = .ready;
 
             self.ready_queue_ref.pushFront(t) catch unreachable;
@@ -161,8 +161,8 @@ pub const IoManager = extern struct {
         if (uart_queues[idx].read) |t| {
             const now = time.getTimeMicros();
 
-            t.metadata.io_wait_time = now - t.metadata.time_put_on_wait;
-            t.metadata.time_put_on_wait = now;
+            t.metadata.io_wait_time = now - t.metadata.last_time_switched;
+            t.metadata.last_time_switched = now;
             t.state = .ready;
 
             self.ready_queue_ref.pushFront(t) catch unreachable;
@@ -179,8 +179,8 @@ pub const IoManager = extern struct {
         const queue = &gpio_queues[idx];
 
         while (queue.pop()) |t| {
-            t.metadata.io_wait_time = now - t.metadata.time_put_on_wait;
-            t.metadata.time_put_on_wait = now;
+            t.metadata.io_wait_time = now - t.metadata.last_time_switched;
+            t.metadata.last_time_switched = now;
             t.state = .ready;
 
             self.ready_queue_ref.pushFront(t) catch unreachable;
