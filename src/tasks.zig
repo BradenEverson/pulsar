@@ -22,8 +22,8 @@ pub fn blockingWaitApprox(n: usize) void {
 pub fn ioBlinky() noreturn {
     while (true) {
         c.HAL_GPIO_TogglePin(c.LD2_GPIO_Port, c.LD2_Pin);
-        blockingWaitApprox(30);
-        sched.ioCall(.{ .SleepMs = 100 });
+        blockingWaitApprox(50);
+        sched.ioCall(.{ .SleepMs = 50 });
     }
 }
 

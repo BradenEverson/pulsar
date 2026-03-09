@@ -16,7 +16,7 @@ pub const QAgent = extern struct {
     /// Number of times we split up the CPU utilization percents
     /// into discrete buckets
     /// Ex: 10 buckets gives us 0-10%, 11-20%, ...
-    const BUCKETS: usize = 5;
+    const BUCKETS: usize = 6;
     const BUCKETS_F: f32 = @floatFromInt(BUCKETS);
 
     pub inline fn getStateFromPct(cpu_pct: f32) usize {
@@ -52,9 +52,9 @@ pub const QAgent = extern struct {
         }
     }
 
-    const FAIRNESS_PENALTY: f32 = 10;
-    const READY_WAIT_WEIGHT: f32 = 20;
-    const IO_REWARD: f32 = 5;
+    const FAIRNESS_PENALTY: f32 = 15;
+    const READY_WAIT_WEIGHT: f32 = 1;
+    const IO_REWARD: f32 = 10;
 
     const B: f32 = 0.002;
     const K: f32 = 1;
@@ -63,6 +63,15 @@ pub const QAgent = extern struct {
         const d: f32 = @floatFromInt(self.deltas[self.current_state]);
 
         return B * std.math.exp(K * @abs(d - 10));
+    }
+
+    const D: f32 = 0.01;
+    const G: f32 = 0.5;
+
+    pub inline fn quadraticDeltaPunishment(self: *QAgent) f32 {
+        const d: f32 = @floatFromInt(self.deltas[self.current_state]);
+
+        return D * std.math.pow(f32, G * @abs(d - 15), 3);
     }
 
     pub inline fn update(self: *QAgent, cpu: f32, ready_wait: f32, io_wait: f32, avg_sys_wait: f32, num_tasks: f32) usize {
