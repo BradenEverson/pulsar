@@ -88,7 +88,7 @@ pub const QAgent = extern struct {
         const delta: f32 = @floatFromInt(self.deltas[self.current_state]);
         reward -= 0.001 * delta * delta;
 
-        if (io_wait != 0.3) {
+        if (io_wait >= 0.3) {
             reward += IO_REWARD;
         }
 
