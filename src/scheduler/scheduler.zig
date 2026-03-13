@@ -41,7 +41,7 @@ pub const Scheduler = struct {
     total_system_wait: usize = 0,
     avg_system_wait: f32 = 0,
 
-    switches: u32 = 0,
+    switches: f32 = 0,
     comptime trace: bool = true,
 
     ready_queue: TaskQueue = .{},
@@ -53,6 +53,8 @@ pub const Scheduler = struct {
     }
 
     pub inline fn schedule(self: *Scheduler) void {
+        self.switches += 1;
+
         const now = time.getTimeMicros();
 
         const delta = now - CurrentTask.metadata.last_time_switched;
@@ -71,9 +73,7 @@ pub const Scheduler = struct {
         CurrentTask.metadata.ready_wait_time = time.getTimeMicros() - CurrentTask.metadata.last_time_switched;
         self.total_system_wait += CurrentTask.metadata.ready_wait_time;
 
-        self.calcAvgWait();
-
-        const new_delta = CurrentTask.getDelta(self.avg_system_wait, self.ready_queue.len);
+        const new_delta = CurrentTask.getDelta(self.switches);
 
         if (self.trace) {
             CurrentTask.metadata.timestamp = now;

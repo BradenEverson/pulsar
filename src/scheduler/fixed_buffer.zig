@@ -20,6 +20,33 @@ pub fn FixedBufferArrayList(T: type, max: comptime_int) type {
             self.len += 1;
         }
 
+        pub fn insert(self: *Self, idx: usize, val: T) !void {
+            if (self.len == self.vals.len) return error.BufferFull;
+            if (idx > self.len) return error.IndexOutOfBounds;
+
+            var i = self.len;
+            while (i > idx) {
+                i -= 1;
+                self.vals[i + 1] = self.vals[i];
+            }
+
+            self.vals[idx] = val;
+            self.len += 1;
+        }
+
+        pub fn orderedRemove(self: *Self, idx: usize) T {
+            const val = self.vals[idx];
+
+            var i = idx;
+            while (i < self.len - 1) {
+                i += 1;
+                self.vals[i - 1] = self.vals[i];
+            }
+
+            self.len -= 1;
+            return val;
+        }
+
         pub fn pushFront(self: *Self, val: T) !void {
             if (self.len == self.vals.len) return error.BufferFull;
 

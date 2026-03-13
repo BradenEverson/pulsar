@@ -15,27 +15,20 @@ const EPSILON: f32 = 0.15;
 /// Number of times we split up the CPU utilization percents
 /// into discrete buckets
 /// Ex: 10 buckets gives us 0-10%, 11-20%, ...
-const BUCKETS: usize = 5;
+const BUCKETS: usize = 10;
 const BUCKETS_F: f32 = @floatFromInt(BUCKETS);
 
-const TOTAL_STATES = BUCKETS; // * BUCKETS;
+const TOTAL_STATES = BUCKETS * 2;
 
 pub const QAgent = extern struct {
-    /// Includes IO as a second state dimension
-    // pub inline fn getState(cpu_pct: f32, io_pct: f32) usize {
-    //     const cpu_bucket = @min(@as(usize, @intFromFloat(cpu_pct * BUCKETS_F)), BUCKETS - 1);
-    //     const io_bucket = @min(@as(usize, @intFromFloat(io_pct * BUCKETS_F)), BUCKETS - 1);
-    //     return cpu_bucket + io_bucket * BUCKETS;
-    // }
-
-    pub inline fn getState(cpu_pct: f32, io_pct: f32) usize {
-        _ = io_pct;
-        const cpu_bucket = @min(@as(usize, @intFromFloat(cpu_pct * BUCKETS_F)), BUCKETS - 1);
-        return cpu_bucket;
+    pub fn getState(cpu_pct: f32, io_pct: f32) usize {
+        const cpu_bucket: usize = @min(@as(usize, @intFromFloat(cpu_pct * BUCKETS_F)), BUCKETS - 1);
+        const io_bucket: usize = if (io_pct > 0.3) 1 else 0;
+        return cpu_bucket + (io_bucket * 10);
     }
 
     /// Actions the agent can take
-    const Action = enum(u8) { Shorten, Keep, Lengthen };
+    const Action = enum(u8) { ShortenSmall, ShortenMedium, ShortenLarge, Keep, LengthenSmall, LengthenMedium, LengthenLarge };
     const NumActions = @typeInfo(Action).@"enum".fields.len;
 
     q_table: [TOTAL_STATES][NumActions]f32 = std.mem.zeroes([TOTAL_STATES][NumActions]f32),
@@ -47,21 +40,24 @@ pub const QAgent = extern struct {
     const MIN_DELTA: usize = 5;
     const MAX_DELTA: usize = 200;
 
-    pub inline fn updateDelta(self: *QAgent) void {
-        switch (self.last_action) {
-            .Shorten => if (self.deltas[self.current_state] > MIN_DELTA) {
-                self.deltas[self.current_state] -= 1;
-            },
-            .Keep => {},
-            .Lengthen => if (self.deltas[self.current_state] < MAX_DELTA) {
-                self.deltas[self.current_state] += 1;
-            },
+    const STEP_SIZES = [_]usize{ 1, 2, 5, 10 };
+
+    pub inline fn updateDelta(self: *QAgent, action: Action) void {
+        const current = self.deltas[self.current_state];
+
+        const step_idx = @intFromEnum(action);
+        if (step_idx < 3) {
+            const step = STEP_SIZES[step_idx];
+            self.deltas[self.current_state] = @max(MIN_DELTA, current - step);
+        } else if (step_idx > 3) {
+            const step = STEP_SIZES[step_idx - 4];
+            self.deltas[self.current_state] = @min(MAX_DELTA, current + step);
         }
     }
 
-    const FAIRNESS_PENALTY: f32 = 3;
+    const FAIRNESS_PENALTY: f32 = 1;
     const READY_WAIT_WEIGHT: f32 = 1;
-    const IO_REWARD: f32 = 1;
+    const IO_REWARD: f32 = 0.5;
 
     const B: f32 = 0.002;
     const K: f32 = 1;
@@ -81,15 +77,19 @@ pub const QAgent = extern struct {
         return D * std.math.pow(f32, G * @abs(d - 15), 3);
     }
 
-    pub inline fn update(self: *QAgent, cpu: f32, ready_wait: f32, io_wait: f32, avg_sys_wait: f32, num_tasks: f32) usize {
-        _ = num_tasks;
-
+    pub inline fn update(self: *QAgent, cpu: f32, ready_wait: f32, io_wait: f32, switches: f32) usize {
         const rng = rand.getRand();
 
-        var reward = cpu - (READY_WAIT_WEIGHT * ready_wait) - (FAIRNESS_PENALTY * (avg_sys_wait));
+        const throughput = 1 / (switches + 1);
+        const fairness = 1.0 - ready_wait;
 
-        if (self.last_action != .Keep) {
-            reward -= self.exponentialDeltaPunishment();
+        var reward = throughput + fairness;
+
+        const delta: f32 = @floatFromInt(self.deltas[self.current_state]);
+        reward -= 0.001 * delta * delta;
+
+        if (io_wait != 0.3) {
+            reward += IO_REWARD;
         }
 
         const next_state = getState(cpu, io_wait);
@@ -119,7 +119,7 @@ pub const QAgent = extern struct {
         }
 
         self.current_state = next_state;
-        self.updateDelta();
+        self.updateDelta(self.last_action);
 
         return self.deltas[self.current_state];
         // baseline test:

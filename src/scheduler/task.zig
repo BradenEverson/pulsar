@@ -6,7 +6,7 @@ const QAgent = @import("q_agent.zig").QAgent;
 const logger = @import("../hal/logger.zig");
 
 /// Number of tasks we support at a time
-pub const MAX_TASKS: usize = 10;
+pub const MAX_TASKS: usize = 5;
 var tasks: usize = 0;
 
 pub const TaskState = enum(u8) {
@@ -15,7 +15,7 @@ pub const TaskState = enum(u8) {
 };
 
 /// Number of words the stack can hold
-pub const MAX_STACK_SIZE: usize = 1024;
+pub const MAX_STACK_SIZE: usize = 2048;
 
 export var stacks: [MAX_TASKS][MAX_STACK_SIZE]u32 = undefined;
 
@@ -68,7 +68,7 @@ pub const Task = extern struct {
         };
     }
 
-    pub inline fn getDelta(self: *Task, avg_wait: f32, ready_queue_length: usize) usize {
+    pub inline fn getDelta(self: *Task, switches: f32) usize {
         self.metadata.total_run_time += self.metadata.run_time;
         self.metadata.total_ready_wait_time += self.metadata.ready_wait_time;
         self.metadata.total_io_wait_time += self.metadata.io_wait_time;
@@ -84,8 +84,7 @@ pub const Task = extern struct {
             cpu_f / tot_f,
             wait_ready_f / tot_f,
             wait_io_f / tot_f,
-            avg_wait,
-            @floatFromInt(ready_queue_length),
+            switches,
         );
         self.metadata.delta = del;
 

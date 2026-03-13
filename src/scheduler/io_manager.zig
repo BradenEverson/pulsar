@@ -15,9 +15,16 @@ const time = @import("../hal/time.zig");
 const task = @import("task.zig");
 const Task = task.Task;
 
+const SleepEntry = struct {
+    task: *Task,
+    wake_time: u64,
+};
 const logger = @import("../hal/logger.zig");
 
 const TaskQueue = @import("fixed_buffer.zig").FixedBufferArrayList(*Task, task.MAX_TASKS);
+const SleepQueue = @import("fixed_buffer.zig").FixedBufferArrayList(SleepEntry, task.MAX_TASKS);
+
+var sleep_queue: SleepQueue = .{};
 
 pub const GpioPort = enum(usize) {
     A,
@@ -67,8 +74,6 @@ const UartIoQueues = struct {
 const UartCount: usize = @typeInfo(Uart).@"enum".fields.len;
 var uart_queues: [UartCount]UartIoQueues = [_]UartIoQueues{.{}} ** UartCount;
 
-var buf: [256]u8 = undefined;
-
 pub const IoManager = extern struct {
     ready_queue_ref: *TaskQueue = undefined,
 
@@ -78,58 +83,61 @@ pub const IoManager = extern struct {
             .GpioWait => |gpio| {
                 t.metadata.last_time_switched = time.getTimeMicros();
                 t.state = .io_waiting;
-
                 gpio_queues[gpio.toIndex()].pushFront(t) catch unreachable;
             },
 
             .UartTransmit => |uart_req| {
                 const idx: usize = @intFromEnum(uart_req.uart);
-                if (uart_queues[idx].write) |_| {
-                    unreachable;
-                }
+                if (uart_queues[idx].write != null) unreachable;
 
                 t.metadata.last_time_switched = time.getTimeMicros();
                 t.state = .io_waiting;
                 uart_queues[idx].write = t;
 
-                // TODO: Better error handling for sure. This returns a status code
                 _ = c.HAL_UART_Transmit_IT(uart_req.uart.getHuart(), uart_req.msg.ptr, uart_req.msg.len);
             },
 
             .UartReceive => |uart_req| {
                 const idx: usize = @intFromEnum(uart_req.uart);
-                if (uart_queues[idx].read) |_| {
-                    unreachable;
-                }
+                if (uart_queues[idx].read != null) unreachable;
 
                 t.metadata.last_time_switched = time.getTimeMicros();
                 t.state = .io_waiting;
                 uart_queues[idx].read = t;
 
-                // TODO: Better error handling for sure. This returns a status code
                 _ = c.HAL_UART_Receive_IT(uart_req.uart.getHuart(), uart_req.buf.ptr, uart_req.buf.len);
             },
 
             .SleepMs => |sleep| {
-                // Currently can only support one sleeping task at a time
-                // TODO: We can do some cool math where if a new task tries to sleep for less time we switch the timer to that then resume to the next. Out of scope for this MVP I believe.
-                if (Sleeper) |_| {
-                    logger.info("TODO: Support multiple sleeping tasks\r\n");
-                    unreachable;
+                const now = time.getTimeMicros();
+                const wake_time = now + sleep * 1000;
+
+                var idx: usize = 0;
+                while (idx < sleep_queue.len) : (idx += 1) {
+                    if (wake_time < sleep_queue.vals[idx].wake_time) break;
                 }
 
-                t.metadata.last_time_switched = time.getTimeMicros();
-                t.state = .io_waiting;
-                Sleeper = t;
+                const entry = SleepEntry{ .task = t, .wake_time = wake_time };
+                sleep_queue.insert(idx, entry) catch unreachable;
 
-                c.SetTimerMs(sleep);
+                t.metadata.last_time_switched = now;
+                t.state = .io_waiting;
+
+                if (idx == 0) {
+                    const delta_us = wake_time - now;
+                    const delta_ms = (delta_us + 999) / 1000;
+                    c.SetTimerMs(@intCast(@max(delta_ms, 1)));
+                }
             },
         }
     }
 
     pub inline fn sleepRetIt(self: *IoManager) void {
-        if (Sleeper) |t| {
-            const now = time.getTimeMicros();
+        const now = time.getTimeMicros();
+
+        while (sleep_queue.len > 0 and sleep_queue.vals[0].wake_time <= now) {
+            const entry = sleep_queue.orderedRemove(0);
+            const t = entry.task;
 
             t.metadata.io_wait_time = now - t.metadata.last_time_switched;
             t.metadata.last_time_switched = now;
@@ -138,7 +146,17 @@ pub const IoManager = extern struct {
             self.ready_queue_ref.pushFront(t) catch unreachable;
         }
 
-        Sleeper = null;
+        if (sleep_queue.len > 0) {
+            const now2 = time.getTimeMicros();
+            const next_wake = sleep_queue.vals[0].wake_time;
+            if (next_wake > now2) {
+                const delta_us = next_wake - now2;
+                const delta_ms = (delta_us + 999) / 1000;
+                c.SetTimerMs(@intCast(@max(delta_ms, 1)));
+            } else {
+                c.SetTimerMs(1);
+            }
+        }
     }
 
     pub inline fn uartTransmitRetIt(self: *IoManager, uart: Uart) void {

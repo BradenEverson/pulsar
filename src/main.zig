@@ -61,6 +61,8 @@ export fn entry() callconv(.c) void {
     c.SET_TIME_DELTA(10);
 
     sched.register(tasks.ioBlinky, 'B');
+    // sched.register(tasks.ioBlinky2, 'D');
+    // sched.register(tasks.ioBlinky3, 'E');
     sched.register(tasks.cpuBlinky, 'C');
 
     sched.start();
