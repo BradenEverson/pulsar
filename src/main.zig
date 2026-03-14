@@ -63,11 +63,11 @@ export fn entry() callconv(.c) void {
 
     // sched.register(printer_tasks.gcodeParser, 'G');
 
-    // sched.register(tasks.ioBlinky, 'B');
+    sched.register(tasks.ioBlinky, 'B');
     // sched.register(tasks.ioBlinky2, 'D');
     // sched.register(tasks.ioBlinky3, 'E');
     sched.register(tasks.cpuBlinky, 'C');
-    sched.register(tasks.cpuBlinky2, 'G');
+    // sched.register(tasks.cpuBlinky2, 'G');
 
     sched.start();
 }

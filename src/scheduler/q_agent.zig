@@ -21,7 +21,7 @@ const BUCKETS_F: f32 = @floatFromInt(BUCKETS);
 const TOTAL_STATES = BUCKETS * 2;
 
 pub const QAgent = extern struct {
-    pub fn getState(cpu_pct: f32, io_pct: f32) usize {
+    pub inline fn getState(cpu_pct: f32, io_pct: f32) usize {
         const cpu_bucket: usize = @min(@as(usize, @intFromFloat(cpu_pct * BUCKETS_F)), BUCKETS - 1);
         const io_bucket: usize = if (io_pct > 0.3) 1 else 0;
         return cpu_bucket + (io_bucket * 10);
