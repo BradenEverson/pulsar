@@ -44,9 +44,18 @@ pub const Gpio = extern struct {
 };
 
 pub const Uart = enum(u8) {
-    uart2 = 2,
-    uart4 = 4,
-    uart5 = 5,
+    uart2,
+    uart4,
+    uart5,
+
+    pub fn fromU8(u: u8) ?Uart {
+        return switch (u) {
+            2 => .uart2,
+            4 => .uart4,
+            5 => .uart5,
+            else => null,
+        };
+    }
 
     pub fn getHuart(self: Uart) *c.UART_HandleTypeDef {
         return switch (self) {

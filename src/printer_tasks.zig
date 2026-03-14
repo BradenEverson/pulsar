@@ -12,9 +12,10 @@ const Scheduler = @import("scheduler/scheduler.zig").Scheduler;
 
 const sched = @import("main.zig");
 
+var buf: [64]u8 = undefined;
+
 /// G-Code Parser
 pub fn gcodeParser() noreturn {
-    var buf: [64]u8 = undefined;
     const req_size = [1]u8{64};
     while (true) {
         // Notify G-Code provider that we're ready
