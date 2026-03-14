@@ -66,3 +66,12 @@ pub fn uartPrint() noreturn {
         sched.ioCall(.{ .SleepMs = 1000 });
     }
 }
+
+/// Reads from USART2 then Prints it back out
+pub fn echo() noreturn {
+    var buf: [64]u8 = undefined;
+    while (true) {
+        sched.ioCall(.{ .UartReceive = .{ .buf = &buf, .uart = .uart2 } });
+        sched.ioCall(.{ .UartTransmit = .{ .msg = &buf, .uart = .uart2 } });
+    }
+}

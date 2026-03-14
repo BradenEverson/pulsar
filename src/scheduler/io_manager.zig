@@ -97,7 +97,7 @@ pub const IoManager = extern struct {
                 t.state = .io_waiting;
                 uart_queues[idx].write = t;
 
-                _ = c.HAL_UART_Transmit_IT(uart_req.uart.getHuart(), uart_req.msg.ptr, uart_req.msg.len);
+                _ = c.HAL_UART_Transmit_IT(uart_req.uart.getHuart(), uart_req.msg.ptr, @truncate(uart_req.msg.len));
             },
 
             .UartReceive => |uart_req| {
@@ -108,7 +108,7 @@ pub const IoManager = extern struct {
                 t.state = .io_waiting;
                 uart_queues[idx].read = t;
 
-                _ = c.HAL_UART_Receive_IT(uart_req.uart.getHuart(), uart_req.buf.ptr, uart_req.buf.len);
+                _ = c.HAL_UART_Receive_IT(uart_req.uart.getHuart(), uart_req.buf.ptr, @truncate(uart_req.buf.len));
             },
 
             .SleepMs => |sleep| {

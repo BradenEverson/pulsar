@@ -73,9 +73,9 @@ const msg: []const u8 = "Hello!\r\n";
 export fn entry() callconv(.c) void {
     c.SET_TIME_DELTA(10);
 
-    sched.register(tasks.uartPrint, 'T');
-
     // sched.register(printer_tasks.gcodeParser, 'G');
+    // sched.register(tasks.uart
+    sched.register(tasks.echo, 'E');
     // sched.register(tasks.ioBlinky, 'B');
     // sched.register(tasks.ioBlinky2, 'D');
     // sched.register(tasks.ioBlinky3, 'E');
