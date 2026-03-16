@@ -8,10 +8,13 @@ const c = @cImport({
     @cInclude("main.h");
 });
 
+extern fn ForcePreempt() void;
+
 extern var huart2: c.UART_HandleTypeDef;
 extern var huart4: c.UART_HandleTypeDef;
 extern var huart5: c.UART_HandleTypeDef;
 
+const sched = @import("scheduler.zig");
 const time = @import("../hal/time.zig");
 const task = @import("task.zig");
 const Task = task.Task;
@@ -88,6 +91,7 @@ var uart_queues: [UartCount]UartIoQueues = [_]UartIoQueues{.{}} ** UartCount;
 
 pub const IoManager = extern struct {
     ready_queue_ref: *TaskQueue = undefined,
+    sched_ref: *sched.Scheduler = undefined,
 
     pub inline fn ioCall(self: *IoManager, t: *Task, io: IoCall) void {
         _ = self;
@@ -171,6 +175,8 @@ pub const IoManager = extern struct {
                 c.SetTimerMs(1);
             }
         }
+
+        if (self.sched_ref.no_curr_task) ForcePreempt();
     }
 
     pub inline fn uartTransmitRetIt(self: *IoManager, uart: Uart) void {
@@ -186,6 +192,7 @@ pub const IoManager = extern struct {
         }
 
         uart_queues[idx].write = null;
+        if (self.sched_ref.no_curr_task) ForcePreempt();
     }
 
     pub inline fn uartReceiveRetIt(self: *IoManager, uart: Uart) void {
@@ -201,6 +208,7 @@ pub const IoManager = extern struct {
         }
 
         uart_queues[idx].read = null;
+        if (self.sched_ref.no_curr_task) ForcePreempt();
     }
 
     pub inline fn gpioRetIt(self: *IoManager, gpio: Gpio) void {
@@ -217,5 +225,6 @@ pub const IoManager = extern struct {
 
             self.ready_queue_ref.pushFront(t) catch unreachable;
         }
+        if (self.sched_ref.no_curr_task) ForcePreempt();
     }
 };

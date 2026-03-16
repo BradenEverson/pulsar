@@ -38,6 +38,7 @@ pub const Scheduler = struct {
     task_count: usize = 0,
     tasks: [task.MAX_TASKS]Task = undefined,
 
+    no_curr_task: bool = false,
     total_system_wait: usize = 0,
     avg_system_wait: f32 = 0,
 
@@ -62,13 +63,21 @@ pub const Scheduler = struct {
 
         CurrentTask.metadata.last_time_switched = now;
 
-        if (CurrentTask.state == .ready) {
+        if (CurrentTask.state == .ready and !self.no_curr_task) {
             self.ready_queue.pushFront(CurrentTask) catch {
                 logger.log("Push Front Failed\r\n", .{});
                 @panic(":(");
             };
         }
+        if (self.ready_queue.len == 0) {
+            // load up the null task
+            CurrentTask = &self.tasks[self.task_count - 1];
+            self.no_curr_task = true;
+            return;
+        }
+
         CurrentTask = self.ready_queue.pop().?;
+        self.no_curr_task = false;
 
         CurrentTask.metadata.ready_wait_time = time.getTimeMicros() - CurrentTask.metadata.last_time_switched;
         self.total_system_wait += CurrentTask.metadata.ready_wait_time;
@@ -115,11 +124,16 @@ pub const Scheduler = struct {
             @panic("Invalid State");
         }
 
+        self.register(@import("null.zig").nullTask, 'N');
+        // Remove null task from the queue
+        _ = self.ready_queue.orderedRemove(0);
+
         CurrentTask = self.ready_queue.pop().?;
 
         disable_irq();
 
         self.io_manager.ready_queue_ref = &self.ready_queue;
+        self.io_manager.sched_ref = self;
         const start_time = time.getTimeMicros();
 
         for (0..self.task_count) |i| {

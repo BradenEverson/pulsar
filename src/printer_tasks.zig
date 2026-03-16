@@ -92,6 +92,15 @@ pub fn eStop() noreturn {
     }
 }
 
+pub fn blockingWaitApprox(n: usize) void {
+    for (0..n * 5000) |i| {
+        _ = i;
+    }
+}
+
 pub fn heartbeat() noreturn {
-    while (true) {}
+    while (true) {
+        c.HAL_GPIO_TogglePin(c.GPIOB, c.GPIO_PIN_5);
+        blockingWaitApprox(500);
+    }
 }
