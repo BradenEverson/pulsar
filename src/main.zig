@@ -80,11 +80,14 @@ export fn entry() callconv(.c) void {
     //
     // while (true) {}
 
-    sched.register(printer_tasks.gcodeParser, 'G');
+    // sched.register(printer_tasks.gcodeParser, 'G');
+    // sched.register(printer_tasks.thermalMonitor, 'T');
+    sched.register(printer_tasks.eStop, 'e');
+    // sched.register(printer_tasks.heartbeat, 'H');
 
     // sched.register(tasks.uartPrint(), 'U');
     // sched.register(tasks.echo, 'E');
-    sched.register(tasks.ioBlinky, 'B');
+    // sched.register(tasks.ioBlinky, 'B');
     // sched.register(tasks.ioBlinky2, 'D');
     // sched.register(tasks.ioBlinky3, 'E');
     sched.register(tasks.cpuBlinky, 'C');

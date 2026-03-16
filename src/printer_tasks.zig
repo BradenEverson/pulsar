@@ -18,6 +18,15 @@ const req_size = [1]u8{64};
 
 extern var huart5: c.UART_HandleTypeDef;
 
+const GCodeCommand = struct {
+    command_type: u8 = 0,
+    command_val: i32 = 0,
+    x: f32 = 0,
+    y: f32 = 0,
+    z: f32 = 0,
+    f: f32 = 0,
+};
+
 /// G-Code Parser
 pub fn gcodeParser() noreturn {
     while (true) {
@@ -39,70 +48,50 @@ pub fn gcodeParser() noreturn {
         });
 
         const term = std.mem.indexOf(u8, &buf, &[_]u8{0xFF});
-        const line = buf[0..term.?];
-        _ = line;
+        const line: []const u8 = if (term) |len| buf[0..len] else &buf;
 
-        // logger.log("{s}\r\n", .{line});
+        var tokens = std.mem.tokenizeAny(u8, line, " ");
 
-        // const parse = parseLine(line) catch
-        //     GCodeCommand{ .command_type = 0, .command_val = 0 };
-        //
-        // logger.log("{c} {any} {any} {any} {any}\r\n", .{ parse.command_type, parse.x, parse.y, parse.z, parse.f });
+        // Parse all tokens in the current line
+        while (tokens.next()) |tok| {
+            var cmd = GCodeCommand{};
+            switch (tok[0]) {
+                'G', 'g' => {
+                    cmd.command_type = 'G';
+                    cmd.command_val = std.fmt.parseInt(i32, tok[1..], 10) catch 0;
+                },
+
+                'M', 'm' => {
+                    cmd.command_type = 'M';
+                    cmd.command_val = std.fmt.parseInt(i32, tok[1..], 10) catch 0;
+                },
+                'X', 'x' => cmd.x = std.fmt.parseFloat(f32, tok[1..]) catch 0,
+                'Y', 'y' => cmd.y = std.fmt.parseFloat(f32, tok[1..]) catch 0,
+                'Z', 'z' => cmd.z = std.fmt.parseFloat(f32, tok[1..]) catch 0,
+                'F', 'f' => cmd.f = std.fmt.parseFloat(f32, tok[1..]) catch 0,
+                else => {},
+            }
+        }
     }
 }
 
-const GCodeCommand = struct {
-    command_type: u8,
-    command_val: i32,
-    x: ?f32 = null,
-    y: ?f32 = null,
-    z: ?f32 = null,
-    f: ?f32 = null,
-};
+pub fn thermalMonitor() noreturn {
+    while (true) {}
+}
 
-pub inline fn parseLine(line: []const u8) !GCodeCommand {
-    var result = GCodeCommand{ .command_type = 0, .command_val = 0 };
-
-    var clean_buf: [64]u8 = undefined;
-    var write_idx: usize = 0;
-    var in_paren = false;
-
-    for (line) |char| {
-        if (in_paren) {
-            if (char == ')') in_paren = false;
-            continue;
-        }
-        if (char == '(') {
-            in_paren = true;
-            continue;
-        }
-        if (char == ';') break;
-
-        if (write_idx < clean_buf.len) {
-            clean_buf[write_idx] = char;
-            write_idx += 1;
-        }
-    }
-    const clean_line = std.mem.trim(u8, clean_buf[0..write_idx], " \t\r\n");
-
-    var tokens = std.mem.tokenizeScalar(u8, clean_line, ' ');
-    while (tokens.next()) |token| {
-        if (token.len < 2) continue;
-
-        const letter = std.ascii.toUpper(token[0]);
-        const value_str = token[1..];
-
-        switch (letter) {
-            'G', 'M' => {
-                result.command_type = letter;
-                result.command_val = try std.fmt.parseInt(i32, value_str, 10);
+pub fn eStop() noreturn {
+    while (true) {
+        sched.ioCall(.{
+            .GpioWait = .{
+                .port = .B,
+                .pin = 6,
             },
-            'X' => result.x = try std.fmt.parseFloat(f32, value_str),
-            'Y' => result.y = try std.fmt.parseFloat(f32, value_str),
-            'Z' => result.z = try std.fmt.parseFloat(f32, value_str),
-            'F' => result.f = try std.fmt.parseFloat(f32, value_str),
-            else => {},
-        }
+        });
+
+        @panic("ESTOP TRIGGERED!!!");
     }
-    return result;
+}
+
+pub fn heartbeat() noreturn {
+    while (true) {}
 }
