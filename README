@@ -1,1 +1,1 @@
-Stm32 RTOS Implementation with a Q-Learning Time Quantum Allocator
+PULSAR: An RTOS with Q-Learning Enabled Time Quantum Allocation to Minimize Average Task Waiting Queue Time
