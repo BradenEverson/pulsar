@@ -4,13 +4,13 @@ const rand = @import("../hal/rand.zig");
 const logger = @import("../hal/logger.zig");
 
 /// Learning Rate
-const ALPHA: f32 = 0.1;
+const ALPHA: f32 = 0.01;
 
 /// Discount Factor, importance of future rewards
-const GAMMA: f32 = 0.6;
+const GAMMA: f32 = 0.8;
 
 /// Exploration rate, probability we try a random action
-const EPSILON: f32 = 0.25;
+const EPSILON: f32 = 0.85;
 
 /// Number of times we split up the CPU utilization percents
 /// into discrete buckets
@@ -18,13 +18,14 @@ const EPSILON: f32 = 0.25;
 const BUCKETS: usize = 10;
 const BUCKETS_F: f32 = @floatFromInt(BUCKETS);
 
-const TOTAL_STATES = BUCKETS * 2;
+const TOTAL_STATES = BUCKETS * 2 * 2;
 
 pub const QAgent = extern struct {
-    pub inline fn getState(cpu_pct: f32, io_pct: f32) usize {
-        const cpu_bucket: usize = @min(@as(usize, @intFromFloat(cpu_pct * BUCKETS_F)), BUCKETS - 1);
-        const io_bucket: usize = if (io_pct > 0.3) 1 else 0;
-        return cpu_bucket + (io_bucket * 10);
+    pub inline fn getState(cpu_pct: f32, io_pct: f32, ready_queue_size: usize) usize {
+        const cpu_idx = @min(@as(usize, @intFromFloat(cpu_pct * BUCKETS_F)), BUCKETS - 1);
+        const io_idx: usize = if (io_pct > 0.2) 1 else 0;
+        const pressure_idx: usize = if (ready_queue_size > 0) 1 else 0;
+        return cpu_idx + (io_idx * BUCKETS) + (pressure_idx * BUCKETS * 2);
     }
 
     /// Actions the agent can take
@@ -36,8 +37,9 @@ pub const QAgent = extern struct {
 
     current_state: usize = 0,
     last_action: Action = .Keep,
+    epsilon: f32 = EPSILON,
 
-    const MIN_DELTA: usize = 5;
+    const MIN_DELTA: usize = 10;
     const MAX_DELTA: usize = 200;
 
     const STEP_SIZES = [_]usize{ 1, 2, 5 };
@@ -55,20 +57,28 @@ pub const QAgent = extern struct {
         }
     }
 
-    const IO_REWARD: f32 = 0.5;
+    const IO_REWARD: f32 = 1.0;
 
-    pub inline fn update(self: *QAgent, cpu: f32, ready_wait: f32, io_wait: f32, switches: f32) usize {
-        _ = switches;
+    pub inline fn update(
+        self: *QAgent,
+        cpu: f32,
+        ready_wait: f32,
+        io_wait: f32,
+        switches: f32,
+        wait_len: usize,
+    ) usize {
         const rng = rand.getRand();
 
-        const delta_f: f32 = @floatFromInt(self.deltas[self.current_state]);
-        const efficiency = delta_f / (delta_f + 20.0);
-        const fairness = 1.0 - ready_wait;
+        const switch_penalty = switches * 0.05;
+        // const utilization_efficiency: f32 = if (cpu > 0.75) 1.5 else 0.0;
+        const utilization_efficiency: f32 = cpu;
+        const wait_penalty = std.math.pow(f32, ready_wait, 2.0) * 5.0;
+        const io_bonus = io_wait * 2.0;
+        const global_congestion_penalty = @as(f32, @floatFromInt(wait_len)) * 0.5;
 
-        var reward = fairness + efficiency;
-        if (io_wait >= 0.3) reward += IO_REWARD;
+        const reward = utilization_efficiency + io_bonus - wait_penalty - switch_penalty - global_congestion_penalty;
 
-        const next_state = getState(cpu, io_wait);
+        const next_state = getState(cpu, io_wait, wait_len);
         var max_q_next = self.q_table[next_state][0];
         inline for (1..NumActions) |i| {
             if (self.q_table[next_state][i] > max_q_next) max_q_next = self.q_table[next_state][i];
@@ -92,6 +102,7 @@ pub const QAgent = extern struct {
         self.last_action = next_action;
         self.updateDelta(next_action);
 
+        self.epsilon *= 0.9999;
         return self.deltas[self.current_state];
         // baseline
         // return 10;

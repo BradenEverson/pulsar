@@ -82,7 +82,7 @@ pub const Scheduler = struct {
         CurrentTask.metadata.ready_wait_time = time.getTimeMicros() - CurrentTask.metadata.last_time_switched;
         self.total_system_wait += CurrentTask.metadata.ready_wait_time;
 
-        const new_delta = CurrentTask.getDelta(self.switches);
+        const new_delta = CurrentTask.getDelta(self.switches, self.ready_queue.len);
 
         if (self.trace) {
             CurrentTask.metadata.timestamp = time.getTimeMicros();

@@ -10,6 +10,7 @@ const io = @import("scheduler/io_manager.zig");
 
 const tasks = @import("tasks.zig");
 const printer_tasks = @import("printer_tasks.zig");
+const cvg_tasks = @import("cvg_tasks.zig");
 const scheduler = @import("scheduler/scheduler.zig");
 
 const c = @cImport({
@@ -75,15 +76,20 @@ var buf: [64]u8 = undefined;
 export fn entry() callconv(.c) void {
     c.SET_TIME_DELTA(10);
 
-    sched.register(printer_tasks.eStop, 'e');
-    sched.register(printer_tasks.thermalMonitor, 'T');
-    sched.register(printer_tasks.heartbeat, 'H');
-    sched.register(printer_tasks.fanControl, 'f');
-    sched.register(printer_tasks.gcodeParser, 'G');
+    sched.register(cvg_tasks.canBusLogger, 'c');
+    sched.register(cvg_tasks.cloudSync, 's');
+    sched.register(cvg_tasks.edgeVisionInference, 'V');
+    sched.register(cvg_tasks.infotainmentUI, 'U');
+
+    // sched.register(printer_tasks.eStop, 'e');
+    // sched.register(printer_tasks.thermalMonitor, 'T');
+    // sched.register(printer_tasks.heartbeat, 'H');
+    // sched.register(printer_tasks.fanControl, 'f');
+    // sched.register(printer_tasks.gcodeParser, 'G');
 
     // sched.register(tasks.uartPrint(), 'U');
     // sched.register(tasks.echo, 'E');
-    // sched.register(tasks.ioBlinky, 'B');
+    sched.register(tasks.ioBlinky, 'B');
     // sched.register(tasks.ioBlinky2, 'D');
     // sched.register(tasks.ioBlinky3, 'E');
     // sched.register(tasks.cpuBlinky, 'C');
