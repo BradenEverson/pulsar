@@ -76,16 +76,16 @@ var buf: [64]u8 = undefined;
 export fn entry() callconv(.c) void {
     c.SET_TIME_DELTA(10);
 
-    sched.register(cvg_tasks.canBusLogger, 'c');
-    sched.register(cvg_tasks.cloudSync, 's');
-    sched.register(cvg_tasks.edgeVisionInference, 'V');
-    sched.register(cvg_tasks.infotainmentUI, 'U');
+    // sched.register(cvg_tasks.canBusLogger, 'c');
+    // sched.register(cvg_tasks.cloudSync, 's');
+    // sched.register(cvg_tasks.edgeVisionInference, 'V');
+    // sched.register(cvg_tasks.infotainmentUI, 'U');
 
-    // sched.register(printer_tasks.eStop, 'e');
-    // sched.register(printer_tasks.thermalMonitor, 'T');
+    sched.register(printer_tasks.eStop, 'e');
+    sched.register(printer_tasks.thermalMonitor, 'T');
     // sched.register(printer_tasks.heartbeat, 'H');
-    // sched.register(printer_tasks.fanControl, 'f');
-    // sched.register(printer_tasks.gcodeParser, 'G');
+    sched.register(printer_tasks.fanControl, 'f');
+    sched.register(printer_tasks.gcodeParser, 'G');
 
     // sched.register(tasks.uartPrint(), 'U');
     // sched.register(tasks.echo, 'E');
